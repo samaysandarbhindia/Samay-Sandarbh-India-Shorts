@@ -1,0 +1,120 @@
+<!-- SSI SHORTS: paste this entire file into a Blogger Page in HTML view.
+     Replace API_BASE with your deployed Netlify function URL. -->
+<div id="ssi-shorts-app">
+  <header class="ssi-topbar">
+    <a class="ssi-brand" href="/">समय संदर्भ इंडिया</a>
+    <span class="ssi-live">SSI VIDEO</span>
+  </header>
+  <main id="ssi-feed" aria-label="All Samay Sandarbh India videos">
+    <div class="ssi-state" id="ssi-state">वीडियो लोड हो रहे हैं...</div>
+  </main>
+  <div class="ssi-toast" id="ssi-toast" role="status"></div>
+</div>
+
+<style>
+#ssi-shorts-app{--red:#e5242b;--blue:#1769aa;background:#07090d;color:#fff;min-height:100vh;font-family:Arial,"Noto Sans Devanagari",sans-serif}
+#ssi-shorts-app *{box-sizing:border-box}
+#ssi-shorts-app .ssi-topbar{height:54px;position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#090b10;border-bottom:1px solid #252832}
+#ssi-shorts-app .ssi-brand{color:#fff;text-decoration:none;font-weight:800;font-size:16px}
+#ssi-shorts-app .ssi-live{font-size:10px;letter-spacing:1.4px;font-weight:800;background:var(--red);padding:6px 9px;border-radius:4px}
+#ssi-shorts-app #ssi-feed{height:calc(100vh - 54px);height:calc(100dvh - 54px);overflow-y:auto;overscroll-behavior-y:contain;scroll-snap-type:y mandatory;scrollbar-width:none}
+#ssi-shorts-app #ssi-feed::-webkit-scrollbar{display:none}
+#ssi-shorts-app .ssi-card{height:calc(100vh - 54px);height:calc(100dvh - 54px);min-height:480px;position:relative;scroll-snap-align:start;scroll-snap-stop:always;background:#11151d;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#ssi-shorts-app .ssi-player{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+#ssi-shorts-app .ssi-overlay{position:absolute;z-index:2;left:0;right:0;bottom:0;padding:70px 16px 24px;background:linear-gradient(transparent,rgba(0,0,0,.88));pointer-events:none}
+#ssi-shorts-app .ssi-title{font-size:17px;line-height:1.4;font-weight:800;text-shadow:0 1px 4px #000;max-width:850px}
+#ssi-shorts-app .ssi-meta{font-size:12px;color:#e1e5ed;margin-top:8px}
+#ssi-shorts-app .ssi-actions{position:absolute;z-index:3;right:12px;bottom:92px;display:flex;flex-direction:column;gap:12px}
+#ssi-shorts-app .ssi-action{width:44px;height:44px;border:1px solid #ffffff55;border-radius:50%;background:#10131bbd;color:#fff;display:grid;place-items:center;text-decoration:none;font-size:19px;cursor:pointer}
+#ssi-shorts-app .ssi-state{min-height:60vh;display:grid;place-items:center;text-align:center;padding:28px;color:#dce1eb}
+#ssi-shorts-app .ssi-loadmore{height:100px;display:grid;place-items:center;color:#aeb6c5;font-size:13px}
+#ssi-shorts-app .ssi-toast{position:fixed;z-index:50;left:50%;bottom:20px;transform:translateX(-50%);background:#242936;color:white;padding:10px 14px;border-radius:8px;font-size:13px;display:none}
+@media(min-width:700px){#ssi-shorts-app #ssi-feed{max-width:560px;margin:auto;border-left:1px solid #252832;border-right:1px solid #252832}#ssi-shorts-app .ssi-topbar{padding:0 max(16px,calc((100% - 528px)/2))}}
+</style>
+
+<script>
+(function(){
+  "use strict";
+  const API_BASE = "https://YOUR-RENDER-SERVICE.onrender.com/api/shorts";
+  const feed = document.getElementById("ssi-feed");
+  const state = document.getElementById("ssi-state");
+  const toast = document.getElementById("ssi-toast");
+  let nextPageToken = null, loading = false, ended = false, observer;
+  const seen = new Set();
+
+  function notify(message){
+    toast.textContent = message; toast.style.display = "block";
+    clearTimeout(notify.timer); notify.timer = setTimeout(()=>toast.style.display="none",2200);
+  }
+  function dateLabel(value){
+    if(!value) return "";
+    try{return new Intl.DateTimeFormat("hi-IN",{dateStyle:"medium"}).format(new Date(value));}
+    catch(e){return "";}
+  }
+  function makeCard(video){
+    if(!video.videoId || seen.has(video.videoId)) return null;
+    seen.add(video.videoId);
+    const card=document.createElement("section"); card.className="ssi-card";
+    card.dataset.videoId=video.videoId;
+    const frame=document.createElement("iframe");
+    frame.className="ssi-player";
+    frame.title=video.title || "Samay Sandarbh India video";
+    frame.loading="lazy";
+    frame.allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+    frame.allowFullscreen=true;
+    frame.referrerPolicy="strict-origin-when-cross-origin";
+    frame.dataset.src="https://www.youtube-nocookie.com/embed/"+encodeURIComponent(video.videoId)+"?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1";
+    const overlay=document.createElement("div"); overlay.className="ssi-overlay";
+    const title=document.createElement("div"); title.className="ssi-title"; title.textContent=video.title || "समय संदर्भ इंडिया";
+    const meta=document.createElement("div"); meta.className="ssi-meta"; meta.textContent="समय संदर्भ इंडिया  •  "+dateLabel(video.publishedAt);
+    overlay.append(title,meta);
+    const actions=document.createElement("div"); actions.className="ssi-actions";
+    const sound=document.createElement("button"); sound.className="ssi-action"; sound.type="button"; sound.textContent="♫"; sound.title="YouTube पर ध्वनि नियंत्रित करें"; sound.addEventListener("click",()=>notify("ध्वनि नियंत्रित करने के लिए वीडियो प्लेयर के controls इस्तेमाल करें।"));
+    const share=document.createElement("button"); share.className="ssi-action"; share.type="button"; share.textContent="↗"; share.title="वीडियो शेयर करें";
+    share.addEventListener("click",async()=>{const url="https://www.youtube.com/watch?v="+video.videoId;try{if(navigator.share) await navigator.share({title:video.title,url});else{await navigator.clipboard.writeText(url);notify("वीडियो लिंक कॉपी हो गया");}}catch(e){}});
+    const yt=document.createElement("a"); yt.className="ssi-action"; yt.textContent="▶"; yt.title="YouTube पर देखें"; yt.href="https://www.youtube.com/watch?v="+video.videoId; yt.target="_blank"; yt.rel="noopener";
+    actions.append(sound,share,yt); card.append(frame,overlay,actions);
+    return card;
+  }
+  function activate(card){
+    document.querySelectorAll("#ssi-feed .ssi-player").forEach(frame=>{
+      if(frame.parentElement===card){if(!frame.src) frame.src=frame.dataset.src;}
+      else if(frame.src){frame.src="about:blank";}
+    });
+  }
+  function setupObserver(){
+    if(observer) observer.disconnect();
+    observer=new IntersectionObserver(entries=>{
+      entries.forEach(entry=>{if(entry.isIntersecting && entry.intersectionRatio>=0.65) activate(entry.target);});
+    },{root:feed,threshold:[0.65]});
+    feed.querySelectorAll(".ssi-card").forEach(card=>observer.observe(card));
+  }
+  async function loadPage(){
+    if(loading||ended) return;
+    loading=true;
+    try{
+      const url=API_BASE+(nextPageToken?"?pageToken="+encodeURIComponent(nextPageToken):"");
+      const response=await fetch(url,{headers:{Accept:"application/json"}});
+      const data=await response.json();
+      if(!response.ok) throw new Error(data.error||"वीडियो लोड नहीं हो सके");
+      if(state) state.remove();
+      let added=0;
+      (data.items||[]).forEach(video=>{const card=makeCard(video);if(card){feed.appendChild(card);added++;}});
+      nextPageToken=data.nextPageToken||null;
+      ended=!nextPageToken;
+      setupObserver();
+      if(added===0 && ended && !seen.size){
+        feed.innerHTML='<div class="ssi-state">इस चैनल पर अभी कोई सार्वजनिक वीडियो उपलब्ध नहीं है।</div>';
+      }
+      if(ended){
+        const end=document.createElement("div");end.className="ssi-loadmore";end.textContent="आपने सभी उपलब्ध वीडियो देख लिए हैं।";feed.appendChild(end);
+      }
+    }catch(error){
+      if(!seen.size) state.textContent=error.message+" — कृपया बाद में पुनः प्रयास करें।";
+      else notify(error.message);
+    }finally{loading=false;}
+  }
+  feed.addEventListener("scroll",()=>{if(feed.scrollTop+feed.clientHeight>=feed.scrollHeight-900) loadPage();},{passive:true});
+  loadPage();
+})();
+</script>

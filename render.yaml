@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ssi-shorts-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: YOUTUBE_CHANNEL_ID
+        value: UCEI7ng6gTbLJ-7qFIBVevRA
